@@ -270,7 +270,7 @@ Goed inzicht in ons parlement is belangrijk, soms omdat er dingen in het nieuws 
 
       onderwerp = eget(r, "naam")+" | " + eget(r, "titel") + " " + onderwerp;
       
-      item.append_child("description").append_child(pugi::node_pcdata).set_value(onderwerp.c_str());
+      item.append_child("description").append_child(pugi::node_pcdata).set_value(htmlEscape(onderwerp).c_str());
 
       
       item.append_child("link").append_child(pugi::node_pcdata).set_value(
@@ -321,7 +321,7 @@ Goed inzicht in ons parlement is belangrijk, soms omdat er dingen in het nieuws 
 
       onderwerp = eget(r, "naam")+" | " + eget(r, "titel") + " " + onderwerp;
       
-      item.append_child("description").append_child(pugi::node_pcdata).set_value(onderwerp.c_str());
+      item.append_child("description").append_child(pugi::node_pcdata).set_value(htmlEscape(onderwerp).c_str());
 
       
       item.append_child("link").append_child(pugi::node_pcdata).set_value(
@@ -379,7 +379,7 @@ Goed inzicht in ons parlement is belangrijk, soms omdat er dingen in het nieuws 
 
       onderwerp = eget(r, "naam")+" | " + eget(r, "titel") + " " + onderwerp;
       
-      item.append_child("description").append_child(pugi::node_pcdata).set_value(onderwerp.c_str());
+      item.append_child("description").append_child(pugi::node_pcdata).set_value(htmlEscape(onderwerp).c_str());
       item.append_child("link").append_child(pugi::node_pcdata).set_value(
 									  fmt::format("https://berthub.eu/tkconv/document.html?nummer={}", eget(r,"nummer")).c_str());
       item.append_child("guid").append_child(pugi::node_pcdata).set_value(eget(r, "nummer").c_str());
