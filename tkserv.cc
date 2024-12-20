@@ -479,24 +479,20 @@ int main(int argc, char** argv)
   });
 
   sws.d_svr.Get("/sitemap-(20\\d\\d(-\\d\\d)?).txt", [&tp](const auto& req, auto& res) {
-    auto sqlw=tp.getLease();
+    auto sqlw= tp.getLease();
     string year = req.matches[1];
     string lower = year + '-' + '\x00';
     string upper = year + '-' + '\xff';
-    year += "-%";
-    auto nums=sqlw->queryT("select group_concat('https://berthub.eu/tkconv/document.html?nummer=' || nummer, '\n') as nummer from Document where datum >= ? and datum < ?", {lower, upper});
-    string resp;
-    for(auto& n : nums) {
-      resp += get<string>(n["nummer"]);
-    }
-    resp += '\n';
-    nums=sqlw->queryT("select group_concat(link, '\n') as id from (select 'https://berthub.eu/tkconv/verslag.html?vergaderingid=' || vergadering.id as link from vergadering,verslag where vergaderingid=vergadering.id and status != 'Casco' and datum >= ? and datum < ? group by vergadering.id)", {lower, upper});
-    for(auto& n : nums) {
-      resp += get<string>(n["id"]);
-    }
-    resp += '\n';
 
-    res.set_content(resp, "text/plain");
+    const char *q =
+      "select coalesce(group_concat(link, '\n') || '\n', '') as body from ("
+      "  select 'https://berthub.eu/tkconv/document.html?nummer=' || nummer as link from Document where datum >= ? and datum < ? "
+      "union all "
+      "  select 'https://berthub.eu/tkconv/verslag.html?vergaderingid=' || vergadering.id as link from vergadering,verslag where vergaderingid=vergadering.id and status != 'Casco' and datum >= ? and datum < ? group by vergadering.id"
+      ")";
+    auto result=sqlw->queryT(q, {lower, upper, lower, upper});
+
+    res.set_content(std::move(get<string>(result[0]["body"])), "text/plain");
   });
 
   // officiele publicatie redirect
