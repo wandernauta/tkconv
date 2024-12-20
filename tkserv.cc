@@ -484,16 +484,18 @@ int main(int argc, char** argv)
     string lower = year + '-' + '\x00';
     string upper = year + '-' + '\xff';
     year += "-%";
-    auto nums=sqlw->queryT("select nummer from Document where datum >= ? and datum < ?", {lower, upper});
+    auto nums=sqlw->queryT("select group_concat('https://berthub.eu/tkconv/document.html?nummer=' || nummer, '\n') as nummer from Document where datum >= ? and datum < ?", {lower, upper});
     string resp;
     for(auto& n : nums) {
-      resp += fmt::format("https://berthub.eu/tkconv/document.html?nummer={}\n", get<string>(n["nummer"]));
+      resp += get<string>(n["nummer"]);
     }
-    nums=sqlw->queryT("select vergadering.id from vergadering,verslag where vergaderingid=vergadering.id and status != 'Casco' and datum like ? group by vergadering.id", {year});
+    resp += '\n';
+    nums=sqlw->queryT("select group_concat(link, '\n') as id from (select 'https://berthub.eu/tkconv/verslag.html?vergaderingid=' || vergadering.id as link from vergadering,verslag where vergaderingid=vergadering.id and status != 'Casco' and datum >= ? and datum < ? group by vergadering.id)", {lower, upper});
     for(auto& n : nums) {
-      resp += fmt::format("https://berthub.eu/tkconv/verslag.html?vergaderingid={}\n", get<string>(n["id"]));
+      resp += get<string>(n["id"]);
     }
-    
+    resp += '\n';
+
     res.set_content(resp, "text/plain");
   });
 
