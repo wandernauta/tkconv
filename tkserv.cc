@@ -478,7 +478,7 @@ int main(int argc, char** argv)
     res.set_content(content, "image/jpeg");
   });
 
-  sws.d_svr.Get("/sitemap-(20\\d\\d).txt", [&tp](const auto& req, auto& res) {
+  sws.d_svr.Get("/sitemap-(20\\d\\d(-\\d\\d)?).txt", [&tp](const auto& req, auto& res) {
     auto sqlw=tp.getLease();
     string year = req.matches[1];
     year += "-%";
@@ -508,24 +508,7 @@ int main(int argc, char** argv)
     res.status = 301;
     res.set_header("Location", "../document.html?nummer="+dest);
   });
-  
-  sws.d_svr.Get("/sitemap-(20\\d\\d-\\d\\d).txt", [&tp](const auto& req, auto& res) {
-    auto sqlw = tp.getLease();
-    string year = req.matches[1];
-    year += "-%";
-    auto nums=sqlw->queryT("select nummer from Document where datum like ?", {year});
-    string resp;
-    for(auto& n : nums) {
-      resp += fmt::format("https://berthub.eu/tkconv/document.html?nummer={}\n", get<string>(n["nummer"]));
-    }
-    nums = sqlw->queryT("select vergadering.id from vergadering,verslag where vergaderingid=vergadering.id and status != 'Casco' and datum like ? group by vergadering.id", {year});
-    for(auto& n : nums) {
-      resp += fmt::format("https://berthub.eu/tkconv/verslag.html?vergaderingid={}\n", get<string>(n["id"]));
-    }
-    res.set_content(resp, "text/plain");
-  });
 
-  
   sws.d_svr.Get("/jarig-vandaag", [&tp](const httplib::Request &req, httplib::Response &res) {
     string f = fmt::format("{:%%-%m-%d}", fmt::localtime(time(0)));
     auto sqlw = tp.getLease();
