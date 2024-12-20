@@ -481,8 +481,10 @@ int main(int argc, char** argv)
   sws.d_svr.Get("/sitemap-(20\\d\\d(-\\d\\d)?).txt", [&tp](const auto& req, auto& res) {
     auto sqlw=tp.getLease();
     string year = req.matches[1];
+    string lower = year + '-' + '\x00';
+    string upper = year + '-' + '\xff';
     year += "-%";
-    auto nums=sqlw->queryT("select nummer from Document where datum like ?", {year});
+    auto nums=sqlw->queryT("select nummer from Document where datum >= ? and datum < ?", {lower, upper});
     string resp;
     for(auto& n : nums) {
       resp += fmt::format("https://berthub.eu/tkconv/document.html?nummer={}\n", get<string>(n["nummer"]));
