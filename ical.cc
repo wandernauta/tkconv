@@ -1,6 +1,5 @@
 #include "ical.hh"
 
-#include <chrono>
 #include <string_view>
 
 #include <fmt/chrono.h>
@@ -44,14 +43,8 @@ std::string ical(const unordered_map<string, string> &act) {
   };
 
   auto emitDt = [&emit](string_view key, const string &localTimestamp) {
-    std::chrono::local_seconds t;
-    std::chrono::sys_seconds utc;
-    std::istringstream ss(localTimestamp);
-
-    std::chrono::from_stream(ss, "%Y-%m-%dT%H:%M:%S", t);
-    utc = std::chrono::current_zone()->to_sys(t);
-
-    emit(key, fmt::format("{:%Y%m%dT%H%M%S}Z", utc));
+    time_t ts = getTstamp(localTimestamp);
+    emit(key, fmt::format("{:%Y%m%dT%H%M%S}Z", fmt::gmtime(ts)));
   };
 
   if (act.contains("nummer") && act.contains("aanvangstijd") && act.contains("eindtijd") && act.contains("bijgewerkt")) {
