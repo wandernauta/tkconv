@@ -401,7 +401,9 @@ int main(int argc, char** argv)
   args.add_argument("port").help("Port number to use").default_value(8089);
   args.add_argument("root").help("Directory containing static assets").default_value("./html/");
   args.add_argument("--rnd-admin-password").help("Create admin user if necessary, and set a random password").default_value(string(""));
-  args.add_argument("--insecure-cookie").help("Use an insecure cookie, for non-https operations").default_value(string(""));
+  args.add_argument("--smtp-server").help("IP address or address:port of SMTP smart host").default_value("10.0.0.2");
+  args.add_argument("--sender-email").help("From address of email we send").default_value("opentk@hubertnet.nl");
+  args.add_argument("--base-url").help("URL of this instance without trailing slash, for use in email").default_value("https://berthub.eu/tkconv");
   args.add_argument("--dev").help("Increase SQLite log verbosity").flag();
   try {
     args.parse_args(argc, argv);
@@ -445,8 +447,7 @@ int main(int argc, char** argv)
   sws.d_svr.set_keep_alive_max_count(1); 
   sws.d_svr.set_keep_alive_timeout(1);
   sws.standardFunctions();
-  addTkUserManagement(sws, "10.0.0.2", "opentk@hubertnet.nl", "https://berthub.eu/tkconv");
-  //  addTkUserManagement(sws, "10.0.0.2", "opentk@hubertnet.nl", "http://127.0.0.1:8089");
+  addTkUserManagement(sws, args.get<string>("--smtp-server"), args.get<string>("--sender-email"), args.get<string>("--base-url"));
   
   
   if(args.is_used("--rnd-admin-password")) {
