@@ -397,6 +397,8 @@ int main(int argc, char** argv)
   
   argparse::ArgumentParser args("tkserv", "0.0");
 
+  args.add_argument("port").help("Port number to use").default_value(8089);
+  args.add_argument("root").help("Directory containing static assets").default_value("./html/");
   args.add_argument("--rnd-admin-password").help("Create admin user if necessary, and set a random password").default_value(string(""));
   args.add_argument("--insecure-cookie").help("Use an insecure cookie, for non-https operations").default_value(string(""));
   try {
@@ -2441,13 +2443,9 @@ int main(int argc, char** argv)
 
   sws.d_svr.set_payload_max_length(1024 * 1024); // 1MB
   
-  string root = "./html/";
-  if(argc > 2)
-    root = argv[2];
+  string root = args.get<string>("root");
   sws.d_svr.set_mount_point("/", root);
-  int port = 8089;
-  if(argc > 1)
-    port = atoi(argv[1]);
+  int port = args.get<int>("port");
   
   fmt::print("Listening on port {} serving html from {}, using {} threads\n",
 	     port, root, CPPHTTPLIB_THREAD_POOL_COUNT);
