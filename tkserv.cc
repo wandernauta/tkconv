@@ -18,6 +18,7 @@
 #include "thingpool.hh"
 #include "sws.hh"
 #include "search.hh"
+#include <sqlite3.h>
 
 using namespace std;
 void addTkUserManagement(SimpleWebSystem& sws, const std::string& mailserver,
@@ -401,6 +402,7 @@ int main(int argc, char** argv)
   args.add_argument("root").help("Directory containing static assets").default_value("./html/");
   args.add_argument("--rnd-admin-password").help("Create admin user if necessary, and set a random password").default_value(string(""));
   args.add_argument("--insecure-cookie").help("Use an insecure cookie, for non-https operations").default_value(string(""));
+  args.add_argument("--dev").help("Increase SQLite log verbosity").flag();
   try {
     args.parse_args(argc, argv);
   }
@@ -409,7 +411,12 @@ int main(int argc, char** argv)
     std::exit(1);
   }
 
-  
+  if (args["--dev"] == true) {
+    sqlite3_config(SQLITE_CONFIG_LOG, +[](void *, int iErrCode, const char *zMsg) {
+      std::cout << "SQLite: " << zMsg << " (" << iErrCode << ")" << std::endl;
+    }, nullptr);
+  }
+
   ThingPool<SQLiteWriter> tp("tk.sqlite3", SQLWFlag::ReadOnly);
   tp.setInit([](SQLiteWriter& sqlw) {
     sqlw.query("ATTACH DATABASE 'oo.sqlite3' as oo");
