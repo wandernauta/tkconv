@@ -39,29 +39,29 @@ static pugi::xml_document rssToDoc(const RssChannel& channel)
   doc.append_attribute("encoding") = "utf-8";
 
   pugi::xml_node rss = doc.append_child("rss");
-  rss.append_attribute("version")="2.0";
-  rss.append_attribute("xmlns:atom")="http://www.w3.org/2005/Atom";
+  rss.append_attribute("version") = "2.0";
+  rss.append_attribute("xmlns:atom") = "http://www.w3.org/2005/Atom";
 
   pugi::xml_node ch = rss.append_child("channel");
-  ch.append_child("title").text().set(channel.title);
-  ch.append_child("description").text().set(channel.description);
+  ch.append_child("title").text().set(channel.title.c_str());
+  ch.append_child("description").text().set(channel.description.c_str());
   ch.append_child("link").text().set("https://berthub.eu/tkconv/");
   ch.append_child("generator").text().set("OpenTK");
 
   auto max = std::max_element(channel.items.begin(), channel.items.end());
 
   if (max != channel.items.end()) {
-    ch.append_child("lastBuildDate").text().set(max->pubDateStr());
+    ch.append_child("lastBuildDate").text().set(max->pubDateStr().c_str());
   }
 
   for (const RssItem& item : channel.items) {
     pugi::xml_node it = ch.append_child("item");
 
-    it.append_child("title").text().set(item.title);
-    it.append_child("description").text().set(item.description);
-    it.append_child("link").text().set(item.link);
-    it.append_child("guid").text().set(item.guid);
-    it.append_child("pubDate").text().set(item.pubDateStr());
+    it.append_child("title").text().set(item.title.c_str());
+    it.append_child("description").text().set(item.description.c_str());
+    it.append_child("link").text().set(item.link.c_str());
+    it.append_child("guid").text().set(item.guid.c_str());
+    it.append_child("pubDate").text().set(item.pubDateStr().c_str());
   }
 
   return doc;
