@@ -726,7 +726,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="Mijn";
     data["og"]["title"] = "Mijn";
     data["og"]["description"] = "Mijn";
-    data["og"]["imageurl"] = "";
 
     inja::Environment e;
     e.set_html_autoescape(true);
@@ -748,7 +747,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="Zoek naar "+htmlEscape(q);
     data["og"]["title"] = "Zoek naar "+htmlEscape(q);
     data["og"]["description"] = "Zoek naar "+htmlEscape(q);
-    data["og"]["imageurl"] = "";
     data["q"] = urlEscape(q);
     inja::Environment e;
     e.set_html_autoescape(false); // !!
@@ -762,7 +760,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="Alle personen";
     data["og"]["title"] = "Alle personen";
     data["og"]["description"] = "Alle personen";
-    data["og"]["imageurl"] = "";
 
     auto personen = packResultsJson(tp.getLease()->queryT(R"(select min(van) voorheteerst, titels, persoon.nummer, roepnaam,tussenvoegsel,achternaam,json_group_array(distinct(afkorting)) fracties from persoon,fractiezetelpersoon,fractiezetel,fractie where  fractiezetelpersoon.persoonid = persoon.id and fractiezetelpersoon.fractiezetelid = fractiezetel.id and fractie.id=fractiezetel.fractieid group by persoon.id order by achternaam,roepnaam)"));
 
@@ -783,7 +780,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="Alle open.overheid.nl documenten";
     data["og"]["title"] = "Alle open.overheid.nl documenten";
     data["og"]["description"] = "Alle open.overheid.nl documenten";
-    data["og"]["imageurl"] = "";
 
     /*
       Selection criteria:
@@ -911,7 +907,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="Toezegging " + nummer;
     data["og"]["title"] = "Toezegging "+nummer;
     data["og"]["description"] = eget(toez[0], "tekst");
-    data["og"]["imageurl"] = "";
     data["toez"]=packResultsJson(toez)[0];
     if(data["toez"]["pnummer"] != "")
       data["toez"]["pfractie"] = getPartyFromNumber(sqlw.get(), (int)data["toez"]["pnummer"]);
@@ -997,7 +992,6 @@ int main(int argc, char** argv)
     z["pagemeta"]["title"]="Zaak "+nummer;
     z["og"]["title"] = "Zaak " + nummer+" | " +  eget(zaken[0], "onderwerp");
     z["og"]["description"] = "Zaak " + eget(zaken[0], "titel") + " | " + eget(zaken[0], "onderwerp");
-    z["og"]["imageurl"] = "";
 
     inja::Environment e;
     e.set_html_autoescape(true);
@@ -1161,7 +1155,6 @@ int main(int argc, char** argv)
       data["pagemeta"]["title"]="";
       data["og"]["title"] = name;
       data["og"]["description"] = name;
-      data["og"]["imageurl"] = "";
 
       res.set_content(e.render_file("./partials/"+file, data), "text/html");
     });
@@ -1254,7 +1247,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="Hoofdpagina – OpenTK";
     data["og"]["title"] = "Recente documenten";
     data["og"]["description"] = "Recente documenten uit de Tweede Kamer";
-    data["og"]["imageurl"] = "";
     
     res.set_content(e.render_file("./partials/index.html", data), "text/html");
   });
@@ -1327,7 +1319,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="OpenTK - Toezeggingen";
     data["og"]["title"] = "OpenTK - Toezeggingen";
     data["og"]["description"] = "Toezeggingen van het kabinet";
-    data["og"]["imageurl"] = "";
     data["data"] = filtered;
     data["voortouw"] = commissie;
     data["fractie"] = fractie;
@@ -1481,7 +1472,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="Open Vragen – OpenTK";
     data["og"]["title"] = "Open vragen";
     data["og"]["description"] = "Open vragen uit de Tweede Kamer";
-    data["og"]["imageurl"] = "";
 
     res.set_content(e.render_file("./partials/open-vragen.html", data), "text/html");
   });
@@ -1541,7 +1531,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="Besluiten – OpenTK";
     data["og"]["title"] = "Recente en toekomstige besluiten";
     data["og"]["description"] = "Recente en toekomstige besluiten in de Tweede Kamer";
-    data["og"]["imageurl"] = "";
     
     res.set_content(e.render_file("./partials/besluiten.html", data), "text/html");
   });
@@ -1563,7 +1552,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="Activiteit – OpenTK";
     data["og"]["title"] = act[0]["onderwerp"];
     data["og"]["description"] = (string)act[0]["datum"] + ": "+ (string)act[0]["onderwerp"];
-    data["og"]["imageurl"] = "";
     
     res.set_content(e.render_file("./partials/activiteit.html", data), "text/html");
   });
@@ -1629,7 +1617,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="Activiteiten – OpenTK";
     data["og"]["title"] = "Activiteiten";
     data["og"]["description"] = "Activiteiten Tweede Kamer";
-    data["og"]["imageurl"] = "";
     
     res.set_content(e.render_file("./partials/activiteiten.html", data), "text/html");
   });
@@ -1674,7 +1661,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="Ongeplande activiteiten – OpenTK";
     data["og"]["title"] = "Ongeplande activiteiten";
     data["og"]["description"] = "Ongeplande activiteiten Tweede Kamer";
-    data["og"]["imageurl"] = "";
 
     res.set_content(e.render_file("./partials/ongeplande-activiteiten.html", data), "text/html");
   });
@@ -1695,7 +1681,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]= eget(deets[0], "naam");
     data["og"]["title"] = eget(deets[0], "naam");
     data["og"]["description"] = eget(deets[0], "naam");
-    data["og"]["imageurl"] = "";
 
     data["id"] = id;
     data["naam"] = eget(deets[0], "naam");
@@ -1725,7 +1710,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="";
     data["og"]["title"] = docs[0]["titel"];
     data["og"]["description"] = docs[0]["titel"];
-    data["og"]["imageurl"] = "";
     
     res.set_content(e.render_file("./partials/ksd.html", data), "text/html");
   });
@@ -1932,7 +1916,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]=get<string>(ret[0]["onderwerp"]);
     data["og"]["title"] = get<string>(ret[0]["onderwerp"]);
     data["og"]["description"] = get<string>(ret[0]["titel"]) + " " +get<string>(ret[0]["onderwerp"]);
-    data["og"]["imageurl"] = "";
 
     bulkEscape(data); 
 
@@ -2014,7 +1997,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]=(string)data["titel"];
     data["og"]["title"] = (string)data["titel"];
     data["og"]["description"] = (string)data["updated"] + " " + (string)data["titel"];
-    data["og"]["imageurl"] = "";
 
     bulkEscape(data); 
     data["htmlverslag"]=enrichHTML(getHtmlForDocument(data["id"], true), tp.getLease().get());
@@ -2063,7 +2045,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]=(string)data["titel"];
     data["og"]["title"] = (string)data["titel"];
     data["og"]["description"] = (string)data["mutatiedatumtijd"] + " " + (string)data["titel"];
-    data["og"]["imageurl"] = "";
 
     bulkEscape(data); 
     //    data["htmlverslag"]="";
@@ -2080,7 +2061,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="Verslagen – OpenTK";
     data["og"]["title"] = "Recente verslagen";
     data["og"]["description"] = "Recente verslagen uit de Tweede Kamer";
-    data["og"]["imageurl"] = "";
     
     res.set_content(e.render_file("./partials/verslagen.html", data), "text/html");
   });
@@ -2158,7 +2138,6 @@ int main(int argc, char** argv)
     data["pagemeta"]["title"]="Stemmingen – OpenTK";
     data["og"]["title"] = "Stemmingen";
     data["og"]["description"] = "Stemmingen";
-    data["og"]["imageurl"] = "";
 
     res.set_content(e.render_file("./partials/stemmingen.html", data), "text/html");
   });
@@ -2359,7 +2338,6 @@ int main(int argc, char** argv)
     data["error"] = data["og"]["title"];
       
     data["og"]["description"] = "Een TKConv error: " + (string)data["error"];
-    data["og"]["imageurl"] = "";
     cout<<"Error: "<<req.path<<" '"<< (string)data["error"] <<"'"<<endl;
     res.set_content(e.render_file("./partials/error.html", data), "text/html");
   });
