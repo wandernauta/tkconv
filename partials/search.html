@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{% if h != "" %}Zoek naar {{h}}{% else %}Zoeken{% endif %}{% endblock %}
 {% block og.title %}{% if h != "" %}Zoek naar {{h}}{% else %}Zoeken{% endif %}{% endblock %}
+{% block og.description %}{% if h != "" %}Zoek naar {{h}}{% else %}Zoeken{% endif %}{% endblock %}
 
 {% block div %}
 x-data="{

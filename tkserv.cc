@@ -705,9 +705,6 @@ int main(int argc, char** argv)
 
     j["openvragen"] = packResultsJson(sqlw->queryT("select substr(openvragen.gestartOp, 0, 11) sdatum, aantal, openvragen.* from openvragen,zaakactor,zaak,persoon left join SchriftelijkeVraagStat on SchriftelijkeVraagStat.documentNummer = openvragen.docunummer  where persoon.id=persoonid and zaak.id = openvragen.id and zaak.id = zaakactor.zaakid and relatie='Indiener' and persoon.id=? order by sdatum asc", {persoonId}));
 
-    j["og"]["description"] = (string)lid[0]["functie"];
-    j["og"]["imageurl"] = "https://berthub.eu/tkconv/personphoto/"+to_string(nummer);
-
     inja::Environment e;
     e.set_html_autoescape(true);
     
@@ -717,7 +714,6 @@ int main(int argc, char** argv)
 
   sws.wrapGet({}, "/mijn.html", [&tp](auto& cr) {
     nlohmann::json data;
-    data["og"]["description"] = "Mijn";
 
     inja::Environment e;
     e.set_html_autoescape(true);
@@ -736,7 +732,6 @@ int main(int argc, char** argv)
   sws.wrapGet({}, "/search.html", [&tp](auto& cr) {
     string q = cr.req.get_param_value("q");
     nlohmann::json data;
-    data["og"]["description"] = "Zoek naar "+htmlEscape(q);
     data["q"] = urlEscape(q);
     data["h"] = htmlEscape(q);
     inja::Environment e;
@@ -748,7 +743,6 @@ int main(int argc, char** argv)
 
   sws.wrapGet({}, "/personen.html", [&tp](auto& cr) {
     nlohmann::json data;
-    data["og"]["description"] = "Alle personen";
 
     auto personen = packResultsJson(tp.getLease()->queryT(R"(select min(van) voorheteerst, titels, persoon.nummer, roepnaam,tussenvoegsel,achternaam,json_group_array(distinct(afkorting)) fracties from persoon,fractiezetelpersoon,fractiezetel,fractie where  fractiezetelpersoon.persoonid = persoon.id and fractiezetelpersoon.fractiezetelid = fractiezetel.id and fractie.id=fractiezetel.fractieid group by persoon.id order by achternaam,roepnaam)"));
 
@@ -766,7 +760,6 @@ int main(int argc, char** argv)
 
   sws.wrapGet({}, "/oods.html", [&tp](auto& cr) {
     nlohmann::json data;
-    data["og"]["description"] = "Alle open.overheid.nl documenten";
 
     /*
       Selection criteria:
@@ -891,7 +884,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
     
-    data["og"]["description"] = eget(toez[0], "tekst");
     data["toez"]=packResultsJson(toez)[0];
     if(data["toez"]["pnummer"] != "")
       data["toez"]["pfractie"] = getPartyFromNumber(sqlw.get(), (int)data["toez"]["pnummer"]);
@@ -974,7 +966,6 @@ int main(int argc, char** argv)
     }
     z["adocs"] = adocs;
     // XXX agendapunt multi
-    z["og"]["description"] = "Zaak " + eget(zaken[0], "titel") + " | " + eget(zaken[0], "onderwerp");
 
     inja::Environment e;
     e.set_html_autoescape(true);
@@ -1135,8 +1126,6 @@ int main(int argc, char** argv)
       if(!q.empty())
 	data["data"] = packResultsJson(tp.getLease()->queryT(q));
       
-      data["og"]["description"] = name;
-
       res.set_content(e.render_file("./partials/"+file, data), "text/html");
     });
   };
@@ -1225,8 +1214,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
 
-    data["og"]["description"] = "Recente documenten uit de Tweede Kamer";
-    
     res.set_content(e.render_file("./partials/index.html", data), "text/html");
   });
 
@@ -1295,7 +1282,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
     nlohmann::json data;
-    data["og"]["description"] = "Toezeggingen van het kabinet";
     data["data"] = filtered;
     data["voortouw"] = commissie;
     data["fractie"] = fractie;
@@ -1446,8 +1432,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
 
-    data["og"]["description"] = "Open vragen uit de Tweede Kamer";
-
     res.set_content(e.render_file("./partials/open-vragen.html", data), "text/html");
   });
 
@@ -1503,8 +1487,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
 
-    data["og"]["description"] = "Recente en toekomstige besluiten in de Tweede Kamer";
-    
     res.set_content(e.render_file("./partials/besluiten.html", data), "text/html");
   });
   
@@ -1522,8 +1504,7 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
 
-    data["onderwerp"] = act[0]["onderwerp"];
-    data["og"]["description"] = (string)act[0]["datum"] + ": "+ (string)act[0]["onderwerp"];
+    data = act[0];
     
     res.set_content(e.render_file("./partials/activiteit.html", data), "text/html");
   });
@@ -1586,8 +1567,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(false); // NOTE WELL!
 
-    data["og"]["description"] = "Activiteiten Tweede Kamer";
-    
     res.set_content(e.render_file("./partials/activiteiten.html", data), "text/html");
   });
 
@@ -1628,8 +1607,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(false); // NOTE WELL!
 
-    data["og"]["description"] = "Ongeplande activiteiten Tweede Kamer";
-
     res.set_content(e.render_file("./partials/ongeplande-activiteiten.html", data), "text/html");
   });
 
@@ -1646,7 +1623,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
     nlohmann::json data;
-    data["og"]["description"] = eget(deets[0], "naam");
 
     data["id"] = id;
     data["naam"] = eget(deets[0], "naam");
@@ -1673,8 +1649,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
 
-    data["og"]["description"] = docs[0]["titel"];
-    
     res.set_content(e.render_file("./partials/ksd.html", data), "text/html");
   });
   
@@ -1877,8 +1851,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(false);
 
-    data["og"]["description"] = get<string>(ret[0]["titel"]) + " " +get<string>(ret[0]["onderwerp"]);
-
     bulkEscape(data); 
 
     if(!externeid.empty() && haveExternalIdFile(externeid)) {
@@ -1956,8 +1928,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(false); // XX 
 
-    data["og"]["description"] = (string)data["updated"] + " " + (string)data["titel"];
-
     bulkEscape(data); 
     data["htmlverslag"]=enrichHTML(getHtmlForDocument(data["id"], true), tp.getLease().get());
     res.set_content(e.render_file("./partials/verslag.html", data), "text/html");
@@ -2002,8 +1972,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(false); // XX 
 
-    data["og"]["description"] = (string)data["mutatiedatumtijd"] + " " + (string)data["titel"];
-
     bulkEscape(data); 
     //    data["htmlverslag"]="";
     res.set_content(e.render_file("./partials/oo.html", data), "text/html");
@@ -2016,7 +1984,6 @@ int main(int argc, char** argv)
     e.set_html_autoescape(true);
     nlohmann::json data;
     data["recenteVerslagen"] = packResultsJson(tmp);
-    data["og"]["description"] = "Recente verslagen uit de Tweede Kamer";
     
     res.set_content(e.render_file("./partials/verslagen.html", data), "text/html");
   });
@@ -2090,8 +2057,6 @@ int main(int argc, char** argv)
     data["weken"] = weeks;
     inja::Environment e;
     e.set_html_autoescape(true); 
-
-    data["og"]["description"] = "Stemmingen";
 
     res.set_content(e.render_file("./partials/stemmingen.html", data), "text/html");
   });
@@ -2290,7 +2255,6 @@ int main(int argc, char** argv)
     string error = fmt::format("Error {} {} @ {}", res.status, httplib::status_message(res.status), time(0));
     data["error"] = error;
       
-    data["og"]["description"] = "Een TKConv error: " + error;
     cout<<"Error: "<<req.path<<" '"<< error <<"'"<<endl;
     res.set_content(e.render_file("./partials/error.html", data), "text/html");
   });

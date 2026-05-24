@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Kamerstukdossiers{% endblock %}
+{% block og.title %}Kamerstukdossiers{% endblock %}
 
 {% block div %}
 x-data="{  kamerstukdossiers: []  }" x-init="getGenKSD('recent-kamerstukdossiers', 'kamerstukdossiers', $data);"

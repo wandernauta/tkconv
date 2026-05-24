@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block title %}Zaak {{zaak.nummer}}{% endblock %}
 {% block og.title %}Zaak {{zaak.nummer} | {{zaak.onderwerp}}{% endblock %}
+{% block og.description %}Zaak {{zaak.nummer} | {{zaak.onderwerp}}{% endblock %}
 
 {% block div %}
 x-data="{
