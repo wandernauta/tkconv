@@ -1,30 +1,78 @@
-#include "inja.hpp"
-#include "thingpool.hh"
 #include "sws.hh"
 #include "scanmon.hh"
 #include "pugixml.hpp"
 #include "search.hh"
 #include <fmt/chrono.h>
+#include <string>
+#include <vector>
 using namespace std;
 
-static auto prepRSS(auto& doc, const std::string& title, const std::string& desc)
+struct RssItem {
+  time_t pubDate;
+  string title;
+  string description;
+  string link;
+  string guid;
+
+  string pubDateStr() const
+  {
+    return fmt::format("{:%a, %d %b %Y %H:%M:%S %z}", fmt::localtime(pubDate));
+  }
+
+  // Natural order of RssItems is pubDate order, ascending.
+  auto operator<=>(const RssItem &) const = default;
+};
+
+struct RssChannel {
+  string title;
+  string description;
+
+  vector<RssItem> items;
+};
+
+static pugi::xml_document rssToDoc(const RssChannel& channel)
 {
+  pugi::xml_document doc;
+
   doc.append_attribute("standalone") = "yes";
   doc.append_attribute("version") = "1.0";
-  
   doc.append_attribute("encoding") = "utf-8";
+
   pugi::xml_node rss = doc.append_child("rss");
   rss.append_attribute("version")="2.0";
   rss.append_attribute("xmlns:atom")="http://www.w3.org/2005/Atom";
-  
-  pugi::xml_node channel = rss.append_child("channel");
-  channel.append_child("title").append_child(pugi::node_pcdata).set_value(title.c_str());
-  channel.append_child("description").append_child(pugi::node_pcdata).set_value(desc.c_str());
-  channel.append_child("link").append_child(pugi::node_pcdata).set_value("https://berthub.eu/tkconv/");
-  channel.append_child("generator").append_child(pugi::node_pcdata).set_value("OpenTK");
-  return channel;
+
+  pugi::xml_node ch = rss.append_child("channel");
+  ch.append_child("title").text().set(channel.title);
+  ch.append_child("description").text().set(channel.description);
+  ch.append_child("link").text().set("https://berthub.eu/tkconv/");
+  ch.append_child("generator").text().set("OpenTK");
+
+  auto max = std::max_element(channel.items.begin(), channel.items.end());
+
+  if (max != channel.items.end()) {
+    ch.append_child("lastBuildDate").text().set(max->pubDateStr());
+  }
+
+  for (const RssItem& item : channel.items) {
+    pugi::xml_node it = ch.append_child("item");
+
+    it.append_child("title").text().set(item.title);
+    it.append_child("description").text().set(item.description);
+    it.append_child("link").text().set(item.link);
+    it.append_child("guid").text().set(item.guid);
+    it.append_child("pubDate").text().set(item.pubDateStr());
+  }
+
+  return doc;
 }
-  
+
+static pair<string, string> rssResponse(const RssChannel &channel) {
+  ostringstream str;
+  pugi::xml_document doc = rssToDoc(channel);
+  doc.save(str);
+  return make_pair<string,string>(str.str(), "application/xml");
+}
 
 static int g_defScannerIntS = 300;
 
@@ -351,55 +399,22 @@ Goed inzicht in ons parlement is belangrijk, soms omdat er dingen in het nieuws 
   
 
   sws.wrapGet({}, "/index.xml", [](auto& cr) {
-    pugi::xml_document doc;
-
     string dlim = fmt::format("{:%Y-%m-%d}", fmt::localtime(time(0) - 8*86400));
-    bool onlyRegeringsstukken=false;
-    auto rows = cr.tp.getLease()->queryT("select Document.datum datum, Document.nummer nummer, Document.onderwerp onderwerp, Document.titel titel, Document.soort soort, Document.bijgewerkt bijgewerkt, ZaakActor.naam naam, ZaakActor.afkorting afkorting from Document left join Link on link.van = document.id left join zaak on zaak.id = link.naar left join  ZaakActor on ZaakActor.zaakId = zaak.id and relatie = 'Voortouwcommissie' where +bronDocument='' and Document.soort != 'Sprekerslijst' and datum > ? and (? or Document.soort in ('Brief regering', 'Antwoord schriftelijke vragen', 'Voorstel van wet', 'Memorie van toelichting', 'Antwoord schriftelijke vragen (nader)')) order by datum desc, bijgewerkt desc",
-						  {dlim, !onlyRegeringsstukken});
+    auto rows = cr.tp.getLease()->query("select Document.nummer nummer, Document.onderwerp onderwerp, Document.titel titel, Document.bijgewerkt bijgewerkt, ZaakActor.naam naam from Document left join Link on Link.van = Document.id left join Zaak on Zaak.id = Link.naar left join ZaakActor on ZaakActor.zaakId = zaak.id and relatie = 'Voortouwcommissie' where +bronDocument='' and Document.soort != 'Sprekerslijst' and datum > ? order by datum desc, bijgewerkt desc", {dlim});
 
-    time_t latest = time(0);
-    if(!rows.empty()) {
-      string maxbw;
-      for(const auto& r: rows) {
-	if(maxbw < eget(r, "bijgewerkt"))
-	  maxbw = eget(r, "bijgewerkt");
-      }
-      latest = getTstamp(maxbw);
-    }
-    string date = fmt::format("{:%a, %d %b %Y %H:%M:%S %z}", fmt::localtime(latest));
-    pugi::xml_node channel = prepRSS(doc, "Hoofd OpenTK feed", "Meest recente kamerdocumenten");
-    channel.append_child("lastBuildDate").append_child(pugi::node_pcdata).set_value(date.c_str());
+    RssChannel rss = { .title = "Hoofd OpenTK feed", .description = "Meest recente kamerdocumenten" };
 
     for(const auto& r : rows) {
-      pugi::xml_node item = channel.append_child("item");
-      string onderwerp = eget(r, "onderwerp");
-      item.append_child("title").append_child(pugi::node_pcdata).set_value(onderwerp.c_str());
-
-      onderwerp = eget(r, "naam")+" | " + eget(r, "titel") + " " + onderwerp;
-      
-      item.append_child("description").append_child(pugi::node_pcdata).set_value(onderwerp.c_str());
-
-      
-      item.append_child("link").append_child(pugi::node_pcdata).set_value(
-									  fmt::format("https://berthub.eu/tkconv/document.html?nummer={}", eget(r,"nummer")).c_str());
-      item.append_child("guid").append_child(pugi::node_pcdata).set_value(("tkconv_"+eget(r, "nummer")).c_str());
-
-
-
-      // 2024-12-06T06:01:10.2530000
-      string pubDate = eget(r, "bijgewerkt");
-      time_t then = getTstamp(pubDate);
-     
-      //      <pubDate>Fri, 13 Dec 2024 14:13:41 +0000</pubDate>
-      date = fmt::format("{:%a, %d %b %Y %H:%M:%S %z}", fmt::localtime(then));
-      item.append_child("pubDate").append_child(pugi::node_pcdata).set_value(date.c_str());
-
-      
+      rss.items.push_back({
+        .pubDate = getTstamp(r.at("bijgewerkt")),
+        .title = r.at("onderwerp"),
+        .description = r.at("naam") + " | " + r.at("titel") + " " + r.at("onderwerp"),
+        .link = "https://berthub.eu/tkconv/document.html?nummer=" + r.at("nummer"),
+        .guid = "tkconv_" + r.at("nummer")
+      });
     }
-    ostringstream str;
-    doc.save(str);
-    return make_pair<string,string>(str.str(), "application/xml");
+
+    return rssResponse(rss);
   });
 
   // https://berthub.eu/tkconv/search.html?q=bert+hubert&twomonths=false&soorten=alles
@@ -414,54 +429,27 @@ Goed inzicht in ons parlement is belangrijk, soms omdat er dingen in het nieuws 
     // for now we can't do the rest, only Document XXX
     auto matches = sh.search(q, {"Document"});
     cout<<"Have "<<matches.size()<<" matches\n";
-    pugi::xml_document doc;
-    pugi::xml_node channel = prepRSS(doc, "Zoek RSS naar " +q, "Documenten gematched door zoekstring "+q);
-    
-    bool first = true;
-    
+    RssChannel rss = { .title = "Zoek RSS naar " +q, .description = "Documenten gematched door zoekstring "+q };
     
     for(auto& m : matches) {
-      auto docs = own.queryT("select Document.onderwerp, Document.titel titel, Document.nummer nummer, Document.bijgewerkt bijgewerkt, ZaakActor.naam naam, ZaakActor.afkorting afkorting from Document left join Link on link.van = document.id left join zaak on zaak.id = link.naar left join  ZaakActor on ZaakActor.zaakId = zaak.id and relatie = 'Voortouwcommissie'  where Document.nummer=?", {m.nummer});
+      auto docs = own.query("select Document.onderwerp, Document.titel titel, Document.nummer nummer, Document.bijgewerkt bijgewerkt, ZaakActor.naam naam, ZaakActor.afkorting afkorting from Document left join Link on link.van = document.id left join zaak on zaak.id = link.naar left join  ZaakActor on ZaakActor.zaakId = zaak.id and relatie = 'Voortouwcommissie'  where Document.nummer=?", {m.nummer});
 
       if(docs.empty()) {
 	cout<<"No hits for "<< m.nummer<<endl;
 	continue;
       }
       auto& r = docs[0];
-      pugi::xml_node item = channel.append_child("item");
-      string onderwerp = eget(r, "onderwerp");
-      item.append_child("title").append_child(pugi::node_pcdata).set_value(onderwerp.c_str());
-      onderwerp = eget(r, "naam")+" | " + eget(r, "titel") + " " + onderwerp;
-      item.append_child("description").append_child(pugi::node_pcdata).set_value(onderwerp.c_str());
 
-      
-      item.append_child("link").append_child(pugi::node_pcdata).set_value(
-									  fmt::format("https://berthub.eu/tkconv/document.html?nummer={}", eget(r,"nummer")).c_str());
-	item.append_child("guid").append_child(pugi::node_pcdata).set_value(("tkconv_"+eget(r, "nummer")).c_str());
-
-      // 2024-12-06T06:01:10.2530000
-      string pubDate = eget(r, "bijgewerkt");
-      time_t then = getTstamp(pubDate);
-     
-      //      <pubDate>Fri, 13 Dec 2024 14:13:41 +0000</pubDate>
-      string date = fmt::format("{:%a, %d %b %Y %H:%M:%S %z}", fmt::localtime(then));
-      item.append_child("pubDate").append_child(pugi::node_pcdata).set_value(date.c_str());
-
-      if(first) {
-	channel.prepend_child("lastBuildDate").append_child(pugi::node_pcdata).set_value(date.c_str());
-	first=false;
-      }
-      
+      rss.items.push_back({
+        .pubDate = getTstamp(r.at("bijgewerkt")),
+        .title = r.at("onderwerp"),
+        .description = r.at("naam") + " | " + r.at("titel") + " " + r.at("onderwerp"),
+        .link = "https://berthub.eu/tkconv/document.html?nummer=" + r.at("nummer"),
+        .guid = "tkconv_" + r.at("nummer")
+      });
     }
 
-    if(first) {
-      string date = fmt::format("{:%a, %d %b %Y %H:%M:%S %z}", fmt::localtime(time(0)));
-      channel.append_child("pubDate").append_child(pugi::node_pcdata).set_value(date.c_str());
-    }
-    
-    ostringstream str;
-    doc.save(str);
-    return make_pair<string,string>(str.str(), "application/xml");
+    return rssResponse(rss);
   });
   
   sws.wrapGet({}, "/:timsi/index.xml", [](auto& cr) {
@@ -472,109 +460,52 @@ Goed inzicht in ons parlement is belangrijk, soms omdat er dingen in het nieuws 
 
     cout<<"Got "<<docids.size()<<" docids\n";
     
-    pugi::xml_document doc;
-    pugi::xml_node channel = prepRSS(doc, "Monitor RSS", "Documenten gematched door jouw monitors");
-    
-    bool first = true;
-
+    RssChannel rss = { .title = "Monitor RSS", .description = "Documenten gematched door jouw monitors" };
 
     for(const auto& di : docids) {
-      pugi::xml_node item = channel.append_child("item");
-
-      auto docs = cr.tp.getLease()->queryT("select Document.onderwerp, Document.titel titel, Document.nummer nummer, Document.bijgewerkt bijgewerkt, ZaakActor.naam naam, ZaakActor.afkorting afkorting from Document left join Link on link.van = document.id left join zaak on zaak.id = link.naar left join  ZaakActor on ZaakActor.zaakId = zaak.id and relatie = 'Voortouwcommissie'  where Document.nummer=?", {eget(di, "identifier")});
+      auto docs = cr.tp.getLease()->query("select Document.onderwerp, Document.titel titel, Document.nummer nummer, Document.bijgewerkt bijgewerkt, ZaakActor.naam naam, ZaakActor.afkorting afkorting from Document left join Link on link.van = document.id left join zaak on zaak.id = link.naar left join  ZaakActor on ZaakActor.zaakId = zaak.id and relatie = 'Voortouwcommissie'  where Document.nummer=?", {eget(di, "identifier")});
       if(docs.empty())
 	continue;
       auto& r = docs[0];
-      
-      string onderwerp = eget(r, "onderwerp");
-      item.append_child("title").append_child(pugi::node_pcdata).set_value(onderwerp.c_str());
 
-      onderwerp = eget(r, "naam")+" | " + eget(r, "titel") + " " + onderwerp;
-      
-      item.append_child("description").append_child(pugi::node_pcdata).set_value(onderwerp.c_str());
-
-      
-      item.append_child("link").append_child(pugi::node_pcdata).set_value(
-									  fmt::format("https://berthub.eu/tkconv/document.html?nummer={}", eget(r,"nummer")).c_str());
-      item.append_child("guid").append_child(pugi::node_pcdata).set_value(("tkconv_"+eget(r, "nummer")).c_str());
-
-      // 2024-12-06T06:01:10.2530000
-      string pubDate = eget(r, "bijgewerkt");
-      time_t then = getTstamp(pubDate);
-     
-      //      <pubDate>Fri, 13 Dec 2024 14:13:41 +0000</pubDate>
-      string date = fmt::format("{:%a, %d %b %Y %H:%M:%S %z}", fmt::localtime(then));
-      item.append_child("pubDate").append_child(pugi::node_pcdata).set_value(date.c_str());
-
-      if(first) {
-	channel.prepend_child("lastBuildDate").append_child(pugi::node_pcdata).set_value(date.c_str());
-	first=false;
-      }
-      
+      rss.items.push_back({
+        .pubDate = getTstamp(r.at("bijgewerkt")),
+        .title = r.at("onderwerp"),
+        .description = r.at("naam") + " | " + r.at("titel") + " " + r.at("onderwerp"),
+        .link = "https://berthub.eu/tkconv/document.html?nummer=" + r.at("nummer"),
+        .guid = "tkconv_" + r.at("nummer"),
+      });
     }
 
-    if(first) {
-      string date = fmt::format("{:%a, %d %b %Y %H:%M:%S %z}", fmt::localtime(time(0)));
-      channel.append_child("pubDate").append_child(pugi::node_pcdata).set_value(date.c_str());
-    }
-    
-    ostringstream str;
-    doc.save(str);
-    return make_pair<string,string>(str.str(), "application/xml");
+    return rssResponse(rss);
   });
 
   sws.wrapGet({}, "/commissie/:commissieid/index.xml", [](auto& cr) {
     string commissieid = cr.req.path_params.at("commissieid");
     cout<<"Called for commissieid "<<commissieid<<endl;
     string dlim = fmt::format("{:%Y-%m-%d}", fmt::localtime(time(0) - 100*86400));
-    auto docs = cr.tp.getLease()->queryT("select Document.*, ZaakActor.relatie from Zaak,ZaakActor,Document,Link where ZaakActor.zaakId = zaak.id and zaakactor.commissieId=? and Document.id = link.van and Zaak.id = link.naar and ZaakActor.relatie='Voortouwcommissie' and Document.datum > ? order by Document.datum desc", {commissieid, dlim});
+    auto docs = cr.tp.getLease()->query("select Document.bijgewerkt bijgewerkt, Document.onderwerp onderwerp, Document.titel titel, Document.nummer nummer, ZaakActor.relatie from Zaak,ZaakActor,Document,Link where ZaakActor.zaakId = zaak.id and zaakactor.commissieId=? and Document.id = link.van and Zaak.id = link.naar and ZaakActor.relatie='Voortouwcommissie' and Document.datum > ? order by Document.datum desc", {commissieid, dlim});
 
     cout<<"Got "<<docs.size()<<" docids\n";
 
-    auto comm = cr.tp.getLease()->queryT("select naam from commissie where id=?", {commissieid});
+    auto comm = cr.tp.getLease()->query("select naam from commissie where id=?", {commissieid});
     if(comm.empty())
       throw runtime_error("Commissie " + commissieid + " bestaat niet");
-    string naam = eget(comm[0], "naam");
-    
-    pugi::xml_document doc;
-    pugi::xml_node channel = prepRSS(doc, "OpenTK: "+ naam + " RSS", "Documenten voor " + naam);
-    
-    bool first = true;
+    string naam = comm[0].at("naam");
+
+    RssChannel rss = { .title = "OpenTK: "+ naam + " RSS", .description = "Documenten voor " + naam };
 
     for(const auto& r : docs) {
-      pugi::xml_node item = channel.append_child("item");
-      
-      string onderwerp = eget(r, "onderwerp");
-      item.append_child("title").append_child(pugi::node_pcdata).set_value(onderwerp.c_str());
-
-      onderwerp = eget(r, "naam")+" | " + eget(r, "titel") + " " + onderwerp;
-      
-      item.append_child("description").append_child(pugi::node_pcdata).set_value(onderwerp.c_str());
-      item.append_child("link").append_child(pugi::node_pcdata).set_value(
-									  fmt::format("https://berthub.eu/tkconv/document.html?nummer={}", eget(r,"nummer")).c_str());
-      item.append_child("guid").append_child(pugi::node_pcdata).set_value(("tkconv_"+eget(r, "nummer")).c_str());
-      // 2024-12-06T06:01:10.2530000
-      string pubDate = eget(r, "bijgewerkt");
-      time_t then = getTstamp(pubDate);
-     
-      //      <pubDate>Fri, 13 Dec 2024 14:13:41 +0000</pubDate>
-      string date = fmt::format("{:%a, %d %b %Y %H:%M:%S %z}", fmt::localtime(then));
-      item.append_child("pubDate").append_child(pugi::node_pcdata).set_value(date.c_str());
-
-      if(first) {
-	channel.prepend_child("lastBuildDate").append_child(pugi::node_pcdata).set_value(date.c_str());
-	first=false;
-      }
+      rss.items.push_back({
+        .pubDate = getTstamp(r.at("bijgewerkt")),
+        .title = r.at("onderwerp"),
+        .description = " | " + r.at("titel") + " " + r.at("onderwerp"),
+        .link = "https://berthub.eu/tkconv/document.html?nummer=" + r.at("nummer"),
+        .guid = "tkconv_" + r.at("nummer"),
+      });
     }
 
-    if(first) {
-      string date = fmt::format("{:%a, %d %b %Y %H:%M:%S %z}", fmt::localtime(time(0)));
-      channel.append_child("pubDate").append_child(pugi::node_pcdata).set_value(date.c_str());
-    }
-    
-    ostringstream str;
-    doc.save(str);
-    return make_pair<string,string>(str.str(), "application/xml");
+    return rssResponse(rss);
   });
 
   
