@@ -3,7 +3,7 @@
   <head>
     <title>{% block title %}{% endblock %} – OpenTK</title>
     <meta charset="utf-8">
-    <meta property='og:title' content='{{ og.title }}'>
+    <meta property='og:title' content='{% block og.title %}{% endblock %}'>
     <meta property='og:description' content='{{ og.description }}'>
     <meta property='og:type' content='article'>
     <meta property='og:image' content='{{default(og.imageurl,"")}}'>

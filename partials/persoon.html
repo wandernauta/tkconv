@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Kamerlid{% endblock %}
+{% block og.title %}{{meta.roepnaam}} {% if meta.tussenvoegsel != "" %}{{meta.tussenvoegsel}} {% endif %}{{meta.achternaam}}{% endblock %}
 
 {% block div %}
 x-data="{

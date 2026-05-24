@@ -705,11 +705,6 @@ int main(int argc, char** argv)
 
     j["openvragen"] = packResultsJson(sqlw->queryT("select substr(openvragen.gestartOp, 0, 11) sdatum, aantal, openvragen.* from openvragen,zaakactor,zaak,persoon left join SchriftelijkeVraagStat on SchriftelijkeVraagStat.documentNummer = openvragen.docunummer  where persoon.id=persoonid and zaak.id = openvragen.id and zaak.id = zaakactor.zaakid and relatie='Indiener' and persoon.id=? order by sdatum asc", {persoonId}));
 
-    string tv = lid[0]["tussenvoegsel"];
-    if(!tv.empty())
-      tv += ' ';
-    
-    j["og"]["title"] = (string)lid[0]["roepnaam"] + " "+tv + (string)lid[0]["achternaam"];
     j["og"]["description"] = (string)lid[0]["functie"];
     j["og"]["imageurl"] = "https://berthub.eu/tkconv/personphoto/"+to_string(nummer);
 
@@ -722,7 +717,6 @@ int main(int argc, char** argv)
 
   sws.wrapGet({}, "/mijn.html", [&tp](auto& cr) {
     nlohmann::json data;
-    data["og"]["title"] = "Mijn";
     data["og"]["description"] = "Mijn";
 
     inja::Environment e;
@@ -742,7 +736,6 @@ int main(int argc, char** argv)
   sws.wrapGet({}, "/search.html", [&tp](auto& cr) {
     string q = cr.req.get_param_value("q");
     nlohmann::json data;
-    data["og"]["title"] = "Zoek naar "+htmlEscape(q);
     data["og"]["description"] = "Zoek naar "+htmlEscape(q);
     data["q"] = urlEscape(q);
     data["h"] = htmlEscape(q);
@@ -755,7 +748,6 @@ int main(int argc, char** argv)
 
   sws.wrapGet({}, "/personen.html", [&tp](auto& cr) {
     nlohmann::json data;
-    data["og"]["title"] = "Alle personen";
     data["og"]["description"] = "Alle personen";
 
     auto personen = packResultsJson(tp.getLease()->queryT(R"(select min(van) voorheteerst, titels, persoon.nummer, roepnaam,tussenvoegsel,achternaam,json_group_array(distinct(afkorting)) fracties from persoon,fractiezetelpersoon,fractiezetel,fractie where  fractiezetelpersoon.persoonid = persoon.id and fractiezetelpersoon.fractiezetelid = fractiezetel.id and fractie.id=fractiezetel.fractieid group by persoon.id order by achternaam,roepnaam)"));
@@ -774,7 +766,6 @@ int main(int argc, char** argv)
 
   sws.wrapGet({}, "/oods.html", [&tp](auto& cr) {
     nlohmann::json data;
-    data["og"]["title"] = "Alle open.overheid.nl documenten";
     data["og"]["description"] = "Alle open.overheid.nl documenten";
 
     /*
@@ -900,7 +891,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
     
-    data["og"]["title"] = "Toezegging "+nummer;
     data["og"]["description"] = eget(toez[0], "tekst");
     data["toez"]=packResultsJson(toez)[0];
     if(data["toez"]["pnummer"] != "")
@@ -984,7 +974,6 @@ int main(int argc, char** argv)
     }
     z["adocs"] = adocs;
     // XXX agendapunt multi
-    z["og"]["title"] = "Zaak " + nummer+" | " +  eget(zaken[0], "onderwerp");
     z["og"]["description"] = "Zaak " + eget(zaken[0], "titel") + " | " + eget(zaken[0], "onderwerp");
 
     inja::Environment e;
@@ -1146,7 +1135,6 @@ int main(int argc, char** argv)
       if(!q.empty())
 	data["data"] = packResultsJson(tp.getLease()->queryT(q));
       
-      data["og"]["title"] = name;
       data["og"]["description"] = name;
 
       res.set_content(e.render_file("./partials/"+file, data), "text/html");
@@ -1237,7 +1225,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
 
-    data["og"]["title"] = "Recente documenten";
     data["og"]["description"] = "Recente documenten uit de Tweede Kamer";
     
     res.set_content(e.render_file("./partials/index.html", data), "text/html");
@@ -1308,7 +1295,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
     nlohmann::json data;
-    data["og"]["title"] = "OpenTK - Toezeggingen";
     data["og"]["description"] = "Toezeggingen van het kabinet";
     data["data"] = filtered;
     data["voortouw"] = commissie;
@@ -1460,7 +1446,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
 
-    data["og"]["title"] = "Open vragen";
     data["og"]["description"] = "Open vragen uit de Tweede Kamer";
 
     res.set_content(e.render_file("./partials/open-vragen.html", data), "text/html");
@@ -1518,7 +1503,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
 
-    data["og"]["title"] = "Recente en toekomstige besluiten";
     data["og"]["description"] = "Recente en toekomstige besluiten in de Tweede Kamer";
     
     res.set_content(e.render_file("./partials/besluiten.html", data), "text/html");
@@ -1538,7 +1522,7 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
 
-    data["og"]["title"] = act[0]["onderwerp"];
+    data["onderwerp"] = act[0]["onderwerp"];
     data["og"]["description"] = (string)act[0]["datum"] + ": "+ (string)act[0]["onderwerp"];
     
     res.set_content(e.render_file("./partials/activiteit.html", data), "text/html");
@@ -1602,7 +1586,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(false); // NOTE WELL!
 
-    data["og"]["title"] = "Activiteiten";
     data["og"]["description"] = "Activiteiten Tweede Kamer";
     
     res.set_content(e.render_file("./partials/activiteiten.html", data), "text/html");
@@ -1645,7 +1628,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(false); // NOTE WELL!
 
-    data["og"]["title"] = "Ongeplande activiteiten";
     data["og"]["description"] = "Ongeplande activiteiten Tweede Kamer";
 
     res.set_content(e.render_file("./partials/ongeplande-activiteiten.html", data), "text/html");
@@ -1664,7 +1646,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
     nlohmann::json data;
-    data["og"]["title"] = eget(deets[0], "naam");
     data["og"]["description"] = eget(deets[0], "naam");
 
     data["id"] = id;
@@ -1692,7 +1673,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
 
-    data["og"]["title"] = docs[0]["titel"];
     data["og"]["description"] = docs[0]["titel"];
     
     res.set_content(e.render_file("./partials/ksd.html", data), "text/html");
@@ -1897,7 +1877,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(false);
 
-    data["og"]["title"] = get<string>(ret[0]["onderwerp"]);
     data["og"]["description"] = get<string>(ret[0]["titel"]) + " " +get<string>(ret[0]["onderwerp"]);
 
     bulkEscape(data); 
@@ -1977,7 +1956,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(false); // XX 
 
-    data["og"]["title"] = (string)data["titel"];
     data["og"]["description"] = (string)data["updated"] + " " + (string)data["titel"];
 
     bulkEscape(data); 
@@ -2024,7 +2002,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(false); // XX 
 
-    data["og"]["title"] = (string)data["titel"];
     data["og"]["description"] = (string)data["mutatiedatumtijd"] + " " + (string)data["titel"];
 
     bulkEscape(data); 
@@ -2039,7 +2016,6 @@ int main(int argc, char** argv)
     e.set_html_autoescape(true);
     nlohmann::json data;
     data["recenteVerslagen"] = packResultsJson(tmp);
-    data["og"]["title"] = "Recente verslagen";
     data["og"]["description"] = "Recente verslagen uit de Tweede Kamer";
     
     res.set_content(e.render_file("./partials/verslagen.html", data), "text/html");
@@ -2115,7 +2091,6 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true); 
 
-    data["og"]["title"] = "Stemmingen";
     data["og"]["description"] = "Stemmingen";
 
     res.set_content(e.render_file("./partials/stemmingen.html", data), "text/html");
@@ -2312,11 +2287,11 @@ int main(int argc, char** argv)
     inja::Environment e;
     e.set_html_autoescape(true);
     nlohmann::json data;
-    data["og"]["title"] = fmt::format("Error {} {} @ {}", res.status, httplib::status_message(res.status), time(0));
-    data["error"] = data["og"]["title"];
+    string error = fmt::format("Error {} {} @ {}", res.status, httplib::status_message(res.status), time(0));
+    data["error"] = error;
       
-    data["og"]["description"] = "Een TKConv error: " + (string)data["error"];
-    cout<<"Error: "<<req.path<<" '"<< (string)data["error"] <<"'"<<endl;
+    data["og"]["description"] = "Een TKConv error: " + error;
+    cout<<"Error: "<<req.path<<" '"<< error <<"'"<<endl;
     res.set_content(e.render_file("./partials/error.html", data), "text/html");
   });
   
