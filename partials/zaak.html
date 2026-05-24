@@ -1,4 +1,6 @@
 {% extends "base.html" %}
+{% block title %}Zaak {{zaak.nummer}}{% endblock %}
+
 {% block div %}
 x-data="{
 haveMonitor: false,
@@ -7,7 +9,6 @@ nummer: '{{zaak.nummer}}',
 kind: 'zaak'
 }" x-init="checkMonitor($data)"
 {% endblock %}
-
 
 {% block javascript %}
 <script defer src="user.js"></script>
