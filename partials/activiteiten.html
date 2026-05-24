@@ -28,7 +28,7 @@
     {% else %}
     <li style="padding-top: 0; padding-bottom: 0;">
       <form id="datum" style="display: inline">
-        <input style="display: inline; width: auto" type="date" name="datum" value="{{meta.datum}}" onchange="document.forms.datum.submit()">
+        <input style="display: inline; width: auto" type="date" name="datum" value="{{meta.datum}}" onchange="if (!this.value.startsWith('0')) document.forms.datum.submit()">
         <noscript><input type="submit"></noscript>
       </form>
     </li>
