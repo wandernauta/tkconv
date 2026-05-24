@@ -23,17 +23,15 @@
   </ul>
   <ul>
     {% if meta.datum == "" %}
-    <li><a href="./activiteiten.html?datum={{meta.vandaag}}">🗓️ Datum kiezen</a></li>
     <li><a href="#vandaag">⏩ Spring naar vandaag</a></li>
+    <li><a href="./activiteiten.html?datum={{meta.vandaag}}">🗓️ Datum kiezen</a></li>
     {% else %}
+    <li><a href="./activiteiten.html">⏩ Terug naar overzicht</a></li>
     <li style="padding-top: 0; padding-bottom: 0;">
       <form id="datum" style="display: inline">
-        <input style="display: inline; width: auto" type="date" name="datum" value="{{meta.datum}}" onchange="if (!this.value.startsWith('0')) document.forms.datum.submit()">
-        <noscript><input type="submit"></noscript>
+        <input style="display: inline; width: auto" type="date" name="datum" value="{{meta.datum}}">
+        <input style="display: inline; width: auto" type="submit" value="►">
       </form>
-    </li>
-    <li style="padding-top: 0; padding-bottom: 0;">
-    <li><a href="./activiteiten.html">⏩ Terug naar overzicht</a></li>
     </li>
     {% endif %}
   </ul>
