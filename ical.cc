@@ -30,7 +30,8 @@ std::string ical(const unordered_map<string, string> &act) {
       }
 
       if (ch == '\n') {
-        out += "\n";
+        out += '\\';
+        out += 'n';
       } else if (ch == ',' || ch == '\\' || ch == ';') {
         out += '\\';
         out += ch;

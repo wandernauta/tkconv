@@ -81,3 +81,16 @@ TEST_CASE("iCal met UTF-8 randgeval") {
   }
 }
 
+TEST_CASE("iCal met embedded newline") {
+  unordered_map<string, string> activiteit = {
+    {"nummer", "1900A0002"},
+    {"aanvangstijd", "2026-05-16T12:00:00"},
+    {"eindtijd", "2026-05-16T12:00:00"},
+    {"zaalnaam", "A \n B"},
+    {"bijgewerkt", "2026-04-10T11:55:25.3870000"}
+  };
+
+  string actual = ical(activiteit);
+
+  CHECK_NE(actual.find("A \\n B"), std::string::npos);
+}
