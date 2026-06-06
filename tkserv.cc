@@ -2252,6 +2252,13 @@ int main(int argc, char** argv)
     res.set_content(response.dump(), "application/json");
   });
 
+  sws.d_svr.Get("/custom.css", [&args](const httplib::Request &req, httplib::Response &res) {
+    inja::Environment e;
+
+    nlohmann::json j = {{"dev", args["dev"] == true}};
+
+    res.set_content(e.render_file("./partials/custom.css", j), "text/css; charset=utf-8");
+  });
 
   auto addMetric = [](ostringstream& ret, std::string_view key, std::string_view desc, std::string_view kind, const auto& value)
   {
