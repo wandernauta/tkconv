@@ -8,10 +8,8 @@
     <meta property='og:type' content='article'>
     <meta property='og:image' content='{{og.imageurl}}'>
     {% block extrameta %} {% endblock %}
-    <link rel='stylesheet' href='pico.min.css' />
-    <style>
-      {% include "custom.css" %}
-    </style>
+    <link rel='stylesheet' href='pico.min.css'>
+    <link rel='stylesheet' href='custom.css'>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {% block javascript %}
     <script defer src="logic.js"></script>
@@ -20,6 +18,7 @@
   </head>
   
   <body>
+    <div class="dev-banner"><mark><span></span></mark></div>
     <div {% block div %} {% endblock %}>
       <header class="container">
 	<center>

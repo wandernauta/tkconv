@@ -22,3 +22,17 @@ span.jarig::before { content: '🎈'; }
 .stemming.meertegen .besluittekst {
     background-color: var(--pico-form-element-invalid-border-color);
 }
+
+{% if dev %}
+.dev-banner mark {
+    display: block;
+}
+
+.dev-banner mark span::before {
+    content: "U beschouwt een testomgeving (tkserv --dev).";
+}
+{% else %}
+.dev-banner {
+    display: none;
+}
+{% endif %}
