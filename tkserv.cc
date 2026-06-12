@@ -684,7 +684,10 @@ int main(int argc, char** argv)
     nlohmann::json j = nlohmann::json::object();
     j["meta"] = lid[0];
 
-    auto zaken = packResultsJson(sqlw->queryT("select substr(zaak.gestartOp,0,11) gestartOp, zaak.onderwerp, zaak.nummer, zaak.id from zaakactor,zaak where persoonid=? and relatie='Indiener' and zaak.id=zaakid order by gestartop desc, nummer desc", {persoonId}));
+    auto zaken = packResultsJson(sqlw->queryT("select substr(zaak.gestartOp,0,11) gestartOp, zaak.onderwerp, zaak.nummer, zaak.id, zaak.soort from zaakactor,zaak where persoonid=? and relatie='Indiener' and zaak.id=zaakid order by gestartop desc, nummer desc", {persoonId}));
+
+    j["moties"] = nlohmann::json::array();
+    j["zaken"] = nlohmann::json::array();
 
     for(auto& z: zaken) {
       z["aangenomen"]="";
@@ -695,8 +698,13 @@ int main(int argc, char** argv)
       for(auto& b : besluiten) {
 	z["aangenomen"]=b["tekst"];
       }
+
+      if(z["soort"]=="Motie")
+	j["moties"].push_back(z);
+      else
+	j["zaken"].push_back(z);
     }
-    j["zaken"] = zaken;
+
     auto gesproken = packResultsJson(sqlw->queryT("select vergaderingspreker.vergaderingid, substr(datum,0,11) datum,soort,zaal,titel,round(1.0*sum(seconden)/60,1) as minuten from VergaderingSpreker,VergaderingSprekerTekst,Persoon,Vergadering where vergadering.id=vergaderingspreker.vergaderingid and Persoon.id=vergaderingspreker.persoonId and persoon.nummer=? and vergaderingsprekertekst.persoonId = Persoon.id and vergaderingsprekertekst.vergaderingid = vergaderingspreker.vergaderingid group by 1 order by datum desc", {nummer}));
     for(auto& g : gesproken) {
       double mins = (double)g["minuten"];
