@@ -18,6 +18,7 @@
 #include "thingpool.hh"
 #include "sws.hh"
 #include "search.hh"
+#include "ical.hh"
 #include <sqlite3.h>
 
 using namespace std;
@@ -1584,6 +1585,27 @@ int main(int argc, char** argv)
     data["og"]["imageurl"] = "";
     
     res.set_content(e.render_file("./partials/activiteit.html", data), "text/html");
+  });
+
+  sws.d_svr.Get("/activiteit.ics", [&tp](const httplib::Request &req, httplib::Response &res) {
+    string nummer = req.get_param_value("nummer");
+    auto db = tp.getLease();
+    const auto acts = db->query("select a.aanvangstijd aanvangstijd, a.bijgewerkt bijgewerkt, a.eindtijd eindtijd, a.nummer nummer, a.noot noot, a.onderwerp onderwerp, a.soort soort, a.voortouwNaam voortouwNaam, z.naam as zaalnaam from Activiteit a left join Reservering r on r.activiteitId=a.id left join Zaal z on z.id=r.zaalId where a.nummer=?", {nummer});
+
+    if(acts.empty()) {
+      res.status=404;
+      res.set_content("Activiteit niet gevonden", "text/plain");
+      return;
+    }
+
+    const auto &act = acts[0];
+
+    // Thunderbird uses the file basename as the name of the imported calendar, so pick something recognizable
+    string fn = fmt::format("{} {}.ics", act.at("nummer"), act.at("onderwerp"));
+    replaceSubstring(fn, "\"", "");
+
+    res.set_header("Content-Disposition", "attachment; filename=\"" + fn + "\"");
+    res.set_content(ical(act), "text/calendar");
   });
 
   sws.d_svr.Get("/activiteiten.html", [&tp](const httplib::Request &req, httplib::Response &res) {
