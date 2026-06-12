@@ -22,7 +22,9 @@ haveMonitor: false
 <hblock>
   <h4 x-text="activiteit['meta'].onderwerp"></h4>
   <h5 x-text="activiteit['meta'].soort"></h5>
-  <p><a x-bind:href="'activiteit.ics?nummer=' + activiteit['meta'].nummer" x-text="activiteit['meta'].nummer"></a> <span x-html="makeBell($data, haveMonitor);"></span>
+  <p>
+    <span x-text="activiteit['meta'].nummer"></span>
+    <a x-bind:href="'activiteit.ics?nummer=' + activiteit['meta'].nummer">Agendalink 🗓️</a> <span x-html="makeBell($data, haveMonitor);"></span>
     <template x-if="activiteit['meta'].besloten == 'true'">
       <span style="font-size: 150%;" data-tooltip="Besloten activiteit">🔒</span>
     </template>
