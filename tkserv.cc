@@ -19,6 +19,7 @@
 #include "sws.hh"
 #include "search.hh"
 #include "ical.hh"
+#include <sqlite3.h>
 
 using namespace std;
 void addTkUserManagement(SimpleWebSystem& sws, const std::string& mailserver,
@@ -398,8 +399,13 @@ int main(int argc, char** argv)
   
   argparse::ArgumentParser args("tkserv", "0.0");
 
+  args.add_argument("port").help("Port number to use").default_value(8089);
+  args.add_argument("root").help("Directory containing static assets").default_value("./html/");
   args.add_argument("--rnd-admin-password").help("Create admin user if necessary, and set a random password").default_value(string(""));
-  args.add_argument("--insecure-cookie").help("Use an insecure cookie, for non-https operations").default_value(string(""));
+  args.add_argument("--smtp-server").help("IP address or address:port of SMTP smart host").default_value("10.0.0.2");
+  args.add_argument("--sender-email").help("From address of email we send").default_value("opentk@hubertnet.nl");
+  args.add_argument("--base-url").help("URL of this instance without trailing slash, for use in email").default_value("https://berthub.eu/tkconv");
+  args.add_argument("--dev").help("Increase SQLite log verbosity").flag();
   try {
     args.parse_args(argc, argv);
   }
@@ -408,7 +414,12 @@ int main(int argc, char** argv)
     std::exit(1);
   }
 
-  
+  if (args["--dev"] == true) {
+    sqlite3_config(SQLITE_CONFIG_LOG, +[](void *, int iErrCode, const char *zMsg) {
+      std::cout << "SQLite: " << zMsg << " (" << iErrCode << ")" << std::endl;
+    }, nullptr);
+  }
+
   ThingPool<SQLiteWriter> tp("tk.sqlite3", SQLWFlag::ReadOnly);
   tp.setInit([](SQLiteWriter& sqlw) {
     sqlw.query("ATTACH DATABASE 'oo.sqlite3' as oo");
@@ -437,8 +448,7 @@ int main(int argc, char** argv)
   sws.d_svr.set_keep_alive_max_count(1); 
   sws.d_svr.set_keep_alive_timeout(1);
   sws.standardFunctions();
-  addTkUserManagement(sws, "10.0.0.2", "opentk@hubertnet.nl", "https://berthub.eu/tkconv");
-  //  addTkUserManagement(sws, "10.0.0.2", "opentk@hubertnet.nl", "http://127.0.0.1:8089");
+  addTkUserManagement(sws, args.get<string>("--smtp-server"), args.get<string>("--sender-email"), args.get<string>("--base-url"));
   
   
   if(args.is_used("--rnd-admin-password")) {
@@ -675,7 +685,10 @@ int main(int argc, char** argv)
     nlohmann::json j = nlohmann::json::object();
     j["meta"] = lid[0];
 
-    auto zaken = packResultsJson(sqlw->queryT("select substr(zaak.gestartOp,0,11) gestartOp, zaak.onderwerp, zaak.nummer, zaak.id from zaakactor,zaak where persoonid=? and relatie='Indiener' and zaak.id=zaakid order by gestartop desc, nummer desc", {persoonId}));
+    auto zaken = packResultsJson(sqlw->queryT("select substr(zaak.gestartOp,0,11) gestartOp, zaak.onderwerp, zaak.nummer, zaak.id, zaak.soort from zaakactor,zaak where persoonid=? and relatie='Indiener' and zaak.id=zaakid order by gestartop desc, nummer desc", {persoonId}));
+
+    j["moties"] = nlohmann::json::array();
+    j["zaken"] = nlohmann::json::array();
 
     for(auto& z: zaken) {
       z["aangenomen"]="";
@@ -686,8 +699,13 @@ int main(int argc, char** argv)
       for(auto& b : besluiten) {
 	z["aangenomen"]=b["tekst"];
       }
+
+      if(z["soort"]=="Motie")
+	j["moties"].push_back(z);
+      else
+	j["zaken"].push_back(z);
     }
-    j["zaken"] = zaken;
+
     auto gesproken = packResultsJson(sqlw->queryT("select vergaderingspreker.vergaderingid, substr(datum,0,11) datum,soort,zaal,titel,round(1.0*sum(seconden)/60,1) as minuten from VergaderingSpreker,VergaderingSprekerTekst,Persoon,Vergadering where vergadering.id=vergaderingspreker.vergaderingid and Persoon.id=vergaderingspreker.persoonId and persoon.nummer=? and vergaderingsprekertekst.persoonId = Persoon.id and vergaderingsprekertekst.vergaderingid = vergaderingspreker.vergaderingid group by 1 order by datum desc", {nummer}));
     for(auto& g : gesproken) {
       double mins = (double)g["minuten"];
@@ -2463,13 +2481,9 @@ int main(int argc, char** argv)
 
   sws.d_svr.set_payload_max_length(1024 * 1024); // 1MB
   
-  string root = "./html/";
-  if(argc > 2)
-    root = argv[2];
+  string root = args.get<string>("root");
   sws.d_svr.set_mount_point("/", root);
-  int port = 8089;
-  if(argc > 1)
-    port = atoi(argv[1]);
+  int port = args.get<int>("port");
   
   fmt::print("Listening on port {} serving html from {}, using {} threads\n",
 	     port, root, CPPHTTPLIB_THREAD_POOL_COUNT);

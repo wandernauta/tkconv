@@ -208,7 +208,7 @@ string getUrl(const std::string& url)
   auto res = cli.Get(url);
   if(!res)  {
     auto err = res.error();
-    throw runtime_error("Oops retrieving: "+httplib::to_string(err));
+    throw runtime_error("Oops retrieving '"+url+"': "+httplib::to_string(err));
   }
   return res->body;
 }
@@ -324,6 +324,7 @@ int main(int argc, char** argv)
     cout<<"NL: "<<startDatumNLFormat<<", normal: "<<day<<endl;
     int start=0;
 
+    int errcount=0;
     for(;;) {
       usleep(250000);
 
@@ -337,10 +338,14 @@ int main(int argc, char** argv)
       
       if(!res) {
 	auto err = res.error();
-	cerr << "Oops retrieving: " << httplib::to_string(err) << endl;
+	cerr << "Oops retrieving '"<<url<<"' " << httplib::to_string(err) << endl;
+	if(++errcount > 10) {
+	  cerr<<"Too many errors, bailing out"<<endl;
+	  exit(EXIT_FAILURE);
+	}
 	continue;
-	//	throw runtime_error("Oops retrieving: "+httplib::to_string(err));
       }
+      errcount=0;
       
       nlohmann::json openbaarmakingen = nlohmann::json::parse(res->body.c_str());
       auto resultaten = openbaarmakingen["resultaten"];

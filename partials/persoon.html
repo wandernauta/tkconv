@@ -72,7 +72,34 @@ kind: 'persoon'
 	{% endfor %}
       </tbody>
     </table>
+</details>
+<p></p>
+  <details>
+    <summary  role="button">Moties ({{ length(moties) }})</summary>
+    <table class="striped">
+      <thead>
+	<tr>
+	  <th>Datum</th>
+	  <th>Onderwerp</th>
+	  <th>Nummer</th>
+	  <th>Soorten</th>
+	  <th>Uitkomst</th>
+	</tr>
+      </thead>
+      <tbody>
+	{% for z in moties %}
+	<tr>
+	  <td> {{z.gestartOp}} </td>
+	  <td> {{z.onderwerp}} </td>
+	  <td><a href="zaak.html?nummer={{z.nummer}}"> {{z.nummer}}</a></td>
+	  <td> {% for d in z.docs %}{% if not loop.is_first %}, {% endif %}{{d.soort}}{% endfor %} </td>
+	  <td >{{z.aangenomen}} </td>
+	</tr>
+	{% endfor %}
+      </tbody>
+    </table>
   </details>
+
 <p></p>
   <details>
     <summary  role="button">Zaken ({{ length(zaken) }})</summary>
