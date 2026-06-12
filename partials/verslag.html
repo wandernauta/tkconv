@@ -1,9 +1,7 @@
 {% extends "base.html" %}
-{% block div %}
-{% endblock %}
-
-{% block javascript %}
-{% endblock %}
+{% block title %}{{titel}}{% endblock %}
+{% block og.title %}{{titel}}{% endblock %}
+{% block og.description %}{{updated}} {{titel}}{% endblock %}
 
 {% block customheader %}
 <h5>Datum {{datum}}. Laatste update: {{updated}}</h5>

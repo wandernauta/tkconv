@@ -1,4 +1,7 @@
 {% extends "base.html" %}
+{% block title %}{{ meta.onderwerp }}{% endblock %}
+{% block og.title %}{{ meta.onderwerp }}{% endblock %}
+{% block og.description %}{{ meta.titel }} {{ meta.onderwerp }}{% endblock %}
 
 {% block javascript %}
 <script defer src="user.js"></script>

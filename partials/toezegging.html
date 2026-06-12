@@ -1,9 +1,7 @@
 {% extends "base.html" %}
-{% block div %}
-{% endblock %}
-
-{% block javascript %}
-{% endblock %}
+{% block title %}Toezegging {{toez.tnummer}}{% endblock %}
+{% block og.title %}Toezegging {{toez.tnummer}}{% endblock %}
+{% block og.description %}{{toez.tekst}}{% endblock %}
 
 {% block customheader %}
 <p></p>

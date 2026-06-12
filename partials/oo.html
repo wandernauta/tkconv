@@ -1,10 +1,7 @@
 {% extends "base.html" %}
-{% block div %}
-{% endblock %}
-
-{% block javascript %}
-{% endblock %}
-
+{% block title %}{{ titel }}{% endblock %}
+{% block og.title %}{{ titel }}{% endblock %}
+{% block og.description %}{{ mutatiedatumtijd }} {{ titel }}{% endblock %}
 
 {% block main %}
 <hgroup>

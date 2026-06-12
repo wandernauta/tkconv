@@ -1,4 +1,11 @@
 {% extends "base.html" %}
+{% block title %}Kamerlid{% endblock %}
+{% block og.title %}{{meta.roepnaam}} {% if meta.tussenvoegsel != "" %}{{meta.tussenvoegsel}} {% endif %}{{meta.achternaam}}{% endblock %}
+{% block og.description %}{{meta.functie}}{% endblock %}
+{% block extrameta %}
+    <meta property='og:image' content='https://berthub.eu/tkconv/personphoto/{{meta.nummer}}'>
+{% endblock %}
+
 {% block div %}
 x-data="{
 haveMonitor: false,
