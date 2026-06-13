@@ -19,6 +19,7 @@
 #include "sws.hh"
 #include "search.hh"
 #include "ical.hh"
+#include "sitemaps.hh"
 #include <sqlite3.h>
 
 using namespace std;
@@ -475,6 +476,8 @@ int main(int argc, char** argv)
   
   // hoe je de fractienaam krijgt bij een persoonId:
   //  select f.afkorting from FractieZetelPersoon fzp,FractieZetel fz,Fractie f, Persoon p where fzp.fractieZetelId = fz.id and fzp.persoonId = p.id and p.id = ?
+
+  createSiteMapHandlers(sws, tp);
   
   sws.d_svr.Get("/getraw/:nummer", [&tp](const httplib::Request &req, httplib::Response &res) {
     string nummer=req.path_params.at("nummer"); // 2023D41173
@@ -563,52 +566,6 @@ int main(int argc, char** argv)
     res.set_content(content, "image/jpeg");
   });
 
-  sws.d_svr.Get("/sitemap-(20\\d\\d).txt", [&tp](const auto& req, auto& res) {
-    auto sqlw=tp.getLease();
-    string year = req.matches[1];
-    year += "-%";
-    auto nums=sqlw->queryT("select nummer from Document where datum like ?", {year});
-    string resp;
-    for(auto& n : nums) {
-      resp += fmt::format("https://berthub.eu/tkconv/document.html?nummer={}\n", get<string>(n["nummer"]));
-    }
-    nums=sqlw->queryT("select vergadering.id from vergadering,verslag where vergaderingid=vergadering.id and status != 'Casco' and datum like ? group by vergadering.id", {year});
-    for(auto& n : nums) {
-      resp += fmt::format("https://berthub.eu/tkconv/verslag.html?vergaderingid={}\n", get<string>(n["id"]));
-    }
-    
-    res.set_content(resp, "text/plain");
-  });
-
-  sws.d_svr.Get("/sitemap-(20\\d\\d)-H([12]).txt", [&tp](const auto& req, auto& res) {
-    auto sqlw=tp.getLease();
-    string year = req.matches[1];
-    string h = req.matches[2];
-
-    string fromDate, toDate;
-    if(h=="1") {
-      fromDate = year+"-01-01";
-      toDate = year+"-07-01";
-    }
-    if(h=="2") {
-      fromDate = year+"-07-02";
-      toDate = year+"-12-31";
-    }
-    cout<<"fromDate: "<<fromDate<<", toDate: "<<toDate<<endl;
-    
-    auto nums=sqlw->queryT("select nummer from Document where datum >= ? and datum <= ?", {fromDate, toDate});
-    string resp;
-    for(auto& n : nums) {
-      resp += fmt::format("https://berthub.eu/tkconv/document.html?nummer={}\n", get<string>(n["nummer"]));
-    }
-    nums=sqlw->queryT("select vergadering.id from vergadering,verslag where vergaderingid=vergadering.id and status != 'Casco' and datum >= ? and datum <= ? group by vergadering.id", {fromDate, toDate});
-    for(auto& n : nums) {
-      resp += fmt::format("https://berthub.eu/tkconv/verslag.html?vergaderingid={}\n", get<string>(n["id"]));
-    }
-    
-    res.set_content(resp, "text/plain");
-  });
-
 
   
   // officiele publicatie redirect
@@ -624,23 +581,6 @@ int main(int argc, char** argv)
     res.status = 301;
     res.set_header("Location", "../document.html?nummer="+dest);
   });
-  
-  sws.d_svr.Get("/sitemap-(20\\d\\d-\\d\\d).txt", [&tp](const auto& req, auto& res) {
-    auto sqlw = tp.getLease();
-    string year = req.matches[1];
-    year += "-%";
-    auto nums=sqlw->queryT("select nummer from Document where datum like ?", {year});
-    string resp;
-    for(auto& n : nums) {
-      resp += fmt::format("https://berthub.eu/tkconv/document.html?nummer={}\n", get<string>(n["nummer"]));
-    }
-    nums = sqlw->queryT("select vergadering.id from vergadering,verslag where vergaderingid=vergadering.id and status != 'Casco' and datum like ? group by vergadering.id", {year});
-    for(auto& n : nums) {
-      resp += fmt::format("https://berthub.eu/tkconv/verslag.html?vergaderingid={}\n", get<string>(n["id"]));
-    }
-    res.set_content(resp, "text/plain");
-  });
-
   
   sws.d_svr.Get("/jarig-vandaag", [&tp](const httplib::Request &req, httplib::Response &res) {
     string f = fmt::format("{:%%-%m-%d}", fmt::localtime(time(0)));
@@ -668,7 +608,6 @@ int main(int argc, char** argv)
 		   
     res.set_content(j.dump(), "application/json");    
   });
-
   
   sws.d_svr.Get("/persoon.html", [&tp](const httplib::Request &req, httplib::Response &res) {
     int nummer = atoi(req.get_param_value("nummer").c_str());
