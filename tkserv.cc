@@ -21,6 +21,7 @@
 #include "ical.hh"
 #include "sitemaps.hh"
 #include <sqlite3.h>
+#include "stemmer.hh"
 
 using namespace std;
 void addTkUserManagement(SimpleWebSystem& sws, const std::string& mailserver,
@@ -420,6 +421,8 @@ int main(int argc, char** argv)
       std::cout << "SQLite: " << zMsg << " (" << iErrCode << ")" << std::endl;
     }, nullptr);
   }
+
+  sqlite3_auto_extension((void(*)(void))(&installDutch));
 
   ThingPool<SQLiteWriter> tp("tk.sqlite3", SQLWFlag::ReadOnly);
   tp.setInit([](SQLiteWriter& sqlw) {

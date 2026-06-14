@@ -149,7 +149,7 @@ Vergt een moderne linux/unix met diverse dependencies:
 ```bash
 apt-get install nlohmann-json3-dev libsqlite3-dev libpugixml-dev libssl-dev \
 zlib1g-dev poppler-utils catdoc imagemagick \
-pkg-config xmlstarlet libmagic-dev
+pkg-config xmlstarlet libmagic-dev libstemmer-dev
 ```
 
 Begin met: meson setup build

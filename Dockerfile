@@ -21,7 +21,8 @@ RUN apt-get update && \
     libpq-dev \
     sqlite3 \
     cmake \
-    xmlstarlet
+    xmlstarlet \
+    libstemmer-dev
 
 # Set the working directory inside the container
 WORKDIR /workdir
