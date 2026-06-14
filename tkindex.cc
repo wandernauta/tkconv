@@ -10,6 +10,7 @@
 #include <unordered_set>
 #include "meta.hh"
 #include "argparse/argparse.hpp"
+#include "stemmer.hh"
 
 using namespace std;
 
@@ -98,6 +99,9 @@ int main(int argc, char** argv)
     limit = getDateDBFormat(time(0) - days * 86400);
   }
   cout<<"Limit for documents: "<<limit<<endl;
+
+  sqlite3_auto_extension((void (*)(void))(&installDutch));
+
   SQLiteWriter todo("tk.sqlite3", SQLWFlag::ReadOnly);
   try {
     todo.query("ATTACH DATABASE 'oo.sqlite3' as oo");
@@ -165,7 +169,7 @@ int main(int argc, char** argv)
   SQLiteWriter sqlw(idxfname, {{"indexed", {{"uuid", "PRIMARY KEY"}}}});
 
   sqlw.queryT(R"(
-CREATE VIRTUAL TABLE IF NOT EXISTS docsearch USING fts5(onderwerp, titel, tekst, contentLength UNINDEXED, bijgewerkt UNINDEXED, uuid, datum UNINDEXED, category UNINDEXED, tokenize="unicode61 tokenchars '_'")
+CREATE VIRTUAL TABLE IF NOT EXISTS docsearch USING fts5(onderwerp, titel, tekst, contentLength UNINDEXED, bijgewerkt UNINDEXED, uuid, datum UNINDEXED, category UNINDEXED, tokenize="dutch unicode61 tokenchars '_'")
 )");
 
   // IF THIS GETS OUT OF SYNC, drop 'indexed', and it will be recreated automatically:

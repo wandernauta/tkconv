@@ -11,6 +11,7 @@
 #include "support.hh"
 #include "scanmon.hh"
 #include "argparse/argparse.hpp"
+#include "stemmer.hh"
 
 using namespace std;
 
@@ -124,6 +125,8 @@ int main(int argc, char** argv)
     std::exit(1);
   }
   
+  sqlite3_auto_extension((void(*)(void))(&installDutch));
+
   SQLiteWriter userdb("user.sqlite3");  
 
   time_t now = time(0);

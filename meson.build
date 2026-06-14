@@ -1,5 +1,7 @@
 project('tkconv', 'cpp', default_options : ['cpp_std=c++20'])
 
+cpp = meson.get_compiler('cpp')
+
 sqlitedep = dependency('sqlite3', version : '>=3.50', default_options: ['fts5=enabled'])
 thread_dep = dependency('threads')
 magic_dep = dependency('libmagic')
@@ -12,6 +14,7 @@ cpphttplib = dependency('cpp-httplib', default_options: 'cpp-httplib_brotli=disa
 sqlitewriter_dep = dependency('sqlitewriter', static: true)
 doctest_dep=dependency('doctest')
 argparse_dep = dependency('argparse', version: '>=3')
+libstemmer_dep = cpp.find_library('libstemmer')
 
 vcs_ct=vcs_tag(command: ['git', 'describe', '--tags', '--always', '--dirty', '--abbrev=9'], 
       input:'git_version.h.in',
@@ -47,10 +50,10 @@ executable('oopull', 'oopull.cc', 'support.cc', 'siphash.cc',
 	argparse_dep, vcs_dep])
 
 
-executable('tkbot', 'tkbot.cc', 'support.cc', 'siphash.cc', 'scanmon.cc', 'search.cc',
+executable('tkbot', 'tkbot.cc', 'support.cc', 'siphash.cc', 'scanmon.cc', 'search.cc', 'stemmer.cc',
 	dependencies: [sqlitedep, json_dep, fmt_dep, cpphttplib,
 	sqlitewriter_dep, pugi_dep, simplesockets_dep,
-	argparse_dep, vcs_dep])
+	argparse_dep, vcs_dep, libstemmer_dep])
 
 executable('tkfsck', 'tkfsck.cc', 'support.cc', 'siphash.cc', 
 	dependencies: [sqlitedep, json_dep, fmt_dep, cpphttplib,
@@ -63,11 +66,11 @@ executable('tkimprov', 'tkimprov.cc', 'support.cc', 'siphash.cc', 'meta.cc',
 	argparse_dep, vcs_dep])
 
 
-executable('tkindex', 'tkindex.cc', 'support.cc', 'siphash.cc', 'meta.cc',
+executable('tkindex', 'tkindex.cc', 'support.cc', 'siphash.cc', 'meta.cc', 'stemmer.cc',
 	dependencies: [sqlitedep, json_dep, fmt_dep,
 	simplesockets_dep,
 	cpphttplib, sqlitewriter_dep, pugi_dep,
-	argparse_dep, vcs_dep])
+	argparse_dep, vcs_dep, libstemmer_dep])
 
 executable('tkpull', 'tkpull.cc', 'support.cc', 'siphash.cc', 'meta.cc',
 	dependencies: [sqlitedep, json_dep, fmt_dep, cpphttplib,
@@ -83,10 +86,10 @@ executable('oppull', 'oppull.cc', 'support.cc', 'siphash.cc',
 
 
 executable('tkserv', 'tkserv.cc', 'support.cc', 'siphash.cc', 'sws.cc', 'users.cc', 'scanmon.cc', 'search.cc',
-		     'enrich.cc', 'ical.cc', 'sitemaps.cc',
+		     'enrich.cc', 'ical.cc', 'sitemaps.cc', 'stemmer.cc',
 	dependencies: [sqlitedep, json_dep,
 	simplesockets_dep, fmt_dep, cpphttplib, sqlitewriter_dep, pugi_dep,
-	argparse_dep, vcs_dep, bcryptcpp_dep])
+	argparse_dep, vcs_dep, bcryptcpp_dep, libstemmer_dep])
 
 executable('playground', 'playground.cc', 'support.cc', 'siphash.cc',
 	dependencies: [sqlitedep, json_dep, fmt_dep,
@@ -103,6 +106,6 @@ executable('playground', 'playground.cc', 'support.cc', 'siphash.cc',
 #	argparse_dep, vcs_dep])
 
 
-executable('testrunner', 'testrunner.cc', 'ical.cc', 'icaltest.cc', 'support.cc',  'siphash.cc', 'search.cc', 'meta.cc',
-dependencies: [sqlitedep, json_dep, fmt_dep, sqlitedep, sqlitewriter_dep, doctest_dep, cpphttplib, simplesockets_dep])
+executable('testrunner', 'testrunner.cc', 'ical.cc', 'icaltest.cc', 'support.cc',  'siphash.cc', 'search.cc', 'meta.cc', 'stemmer.cc',
+dependencies: [sqlitedep, json_dep, fmt_dep, sqlitedep, sqlitewriter_dep, doctest_dep, cpphttplib, simplesockets_dep, libstemmer_dep])
 
